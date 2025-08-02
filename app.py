@@ -13,8 +13,6 @@ from email.mime.text import MIMEText
 from email.header import Header
 from io import StringIO
 from datetime import datetime, timedelta
-from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-
 
 app = Flask(__name__)
 app.secret_key = 'reemplaza_con_una_clave_super_segura'
@@ -265,27 +263,39 @@ def resend(verif_id):
     return redirect(url_for('verify', verif_id=verif_id, resent=1))
 
 @app.route('/dashboard')
-@login_required
 def dashboard():
-    # … código previo …
+    if 'username' not in session or session['rol'] == 'admin':
+        return redirect('/')
+    conn = get_db_connection()
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT u.username, u.rol, u.empresa_id, e.nombre
+          FROM users u
+     LEFT JOIN empresas e ON u.empresa_id = e.id
+         WHERE u.username = %s
+    """, (session['username'],))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        conn.close()
+        return "Usuario no encontrado."
+    username, rol, empresa_id, nombre_empresa = row
 
-    # 1. Definimos qué nombres permitimos
-    allowed = ["Compañía", "Usuarios", "Inventarios"]
+    cur.execute("""
+        SELECT username, rol FROM users
+         WHERE empresa_id = %s
+      ORDER BY username
+    """, (empresa_id,))
+    usuarios_empresa = cur.fetchall()
 
-    # 2. Filtramos en la propia query (SQLAlchemy)
-    menus = (
-        Menu.query
-            .filter_by(company_id=current_user.company_id)
-            .filter(Menu.name.in_(allowed))
-            .all()
-    )
-
-    # … resto del código …
+    cur.close()
+    conn.close()
     return render_template(
-        "dashboard.html",
-        menus=menus,
-        panels=panels,
-        current_user=current_user
+        'dashboard.html',
+        username=username,
+        rol=rol,
+        company=nombre_empresa,
+        usuarios_empresa=usuarios_empresa
     )
 
 @app.route('/exportar_inventario')
@@ -524,7 +534,3 @@ def logout():
 if __name__ == '__main__':
     asegurar_esquema()
     app.run(debug=True)
-
-
-
-
