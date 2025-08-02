@@ -9,7 +9,7 @@ from io import StringIO
 from datetime import datetime, timedelta
 from flask import (
     Flask, render_template, request, redirect,
-    session, url_for, Response, g
+    session, url_for, Response, g, flash
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
@@ -66,15 +66,6 @@ def close_conn(e):
     db_conn = g.pop('db_conn', None)
     if db_conn is not None:
         connection_pool.putconn(db_conn)
-
-# Inyectar íconos de roles en plantillas
-@app.context_processor
-def inject_role_icons():
-    return {
-        'admin': ('Admin', 'rol-admin'),
-        'editor': ('Editor', 'rol-editor'),
-        'viewer': ('Viewer', 'rol-viewer')
-    }
 
 # Funciones de validación
 def es_correo_valido(correo):
@@ -166,6 +157,9 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    
     error = None
     if request.method == 'POST':
         username = request.form['username'].strip().lower()
@@ -188,8 +182,7 @@ def login():
             session['rol'] = user[2]
             session['empresa_id'] = user[3]
             
-            if user[2] == 'admin':
-                return redirect(url_for('admin_panel'))
+            flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('dashboard'))
         
         error = "Usuario o contraseña incorrectos"
@@ -198,6 +191,9 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    
     error = None
     if request.method == 'POST':
         # Recoger datos del formulario
@@ -253,6 +249,9 @@ def register():
 
 @app.route('/verify/<int:verif_id>', methods=['GET', 'POST'])
 def verify(verif_id):
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
+    
     error = None
     resent = request.args.get('resent')
     
@@ -300,6 +299,7 @@ def verify(verif_id):
                 cur.execute("DELETE FROM verifications WHERE id = %s", (verif_id,))
                 conn.commit()
                 
+                flash('¡Registro completado con éxito! Ya puedes iniciar sesión', 'success')
                 return redirect(url_for('login'))
         
         cur.close()
@@ -336,19 +336,31 @@ def resend(verif_id):
 
 @app.route('/dashboard')
 def dashboard():
-    if 'username' not in session or session['rol'] == 'admin':
+    if 'username' not in session:
         return redirect(url_for('login'))
+    
+    # Obtener sección actual (default: 'compania')
+    section = request.args.get('section', 'compania')
     
     conn = get_db_connection()
     cur = conn.cursor()
     
     # Obtener información de la empresa
     cur.execute("""
-        SELECT e.nombre 
-        FROM empresas e
-        WHERE e.id = %s
+        SELECT nombre, direccion, telefono, correo 
+        FROM empresas 
+        WHERE id = %s
     """, (session['empresa_id'],))
     empresa = cur.fetchone()
+    
+    # Obtener usuarios de la empresa
+    cur.execute("""
+        SELECT id, username, rol 
+        FROM users 
+        WHERE empresa_id = %s
+        ORDER BY username
+    """, (session['empresa_id'],))
+    usuarios = cur.fetchall()
     
     # Obtener inventario
     cur.execute("""
@@ -359,30 +371,242 @@ def dashboard():
     """, (session['empresa_id'],))
     inventario = cur.fetchall()
     
-    # Obtener usuarios de la empresa
+    # Obtener estadísticas para la sección de compañía
     cur.execute("""
-        SELECT username, rol 
-        FROM users 
-        WHERE empresa_id = %s
-        ORDER BY username
+        SELECT COUNT(*) FROM inventario WHERE empresa_id = %s
     """, (session['empresa_id'],))
-    usuarios = cur.fetchall()
+    total_articulos = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT COUNT(*) FROM users WHERE empresa_id = %s
+    """, (session['empresa_id'],))
+    total_usuarios = cur.fetchone()[0]
     
     cur.close()
     conn.close()
     
+    # Preparar datos para la plantilla
+    empresa_data = {
+        'nombre': empresa[0],
+        'direccion': empresa[1] or 'No especificada',
+        'telefono': empresa[2] or 'No especificado',
+        'correo': empresa[3] or 'No especificado',
+        'total_articulos': total_articulos,
+        'total_usuarios': total_usuarios
+    } if empresa else None
+    
     return render_template(
         'dashboard.html',
-        username=session['username'],
-        rol=session['rol'],
-        empresa=empresa[0] if empresa else '',
+        section=section,
+        empresa=empresa_data,
+        usuarios=usuarios,
         inventario=inventario,
-        usuarios=usuarios
+        rol=session['rol']
     )
+
+@app.route('/compania/editar', methods=['POST'])
+def editar_compania():
+    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
+        return redirect(url_for('login'))
+    
+    direccion = request.form.get('direccion', '').strip()
+    telefono = request.form.get('telefono', '').strip()
+    correo = request.form.get('correo', '').strip().lower()
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        UPDATE empresas
+        SET direccion = %s, telefono = %s, correo = %s
+        WHERE id = %s
+    """, (direccion, telefono, correo, session['empresa_id']))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    flash('Información de la compañía actualizada correctamente', 'success')
+    return redirect(url_for('dashboard', section='compania'))
+
+@app.route('/usuarios/agregar', methods=['POST'])
+def agregar_usuario():
+    if 'username' not in session or session['rol'] != 'admin':
+        flash('No tienes permisos para realizar esta acción', 'danger')
+        return redirect(url_for('dashboard', section='usuarios'))
+    
+    username = request.form['username'].strip().lower()
+    password = request.form['password']
+    rol = request.form['rol']
+    
+    if not es_correo_valido(username):
+        flash('Formato de correo inválido', 'danger')
+        return redirect(url_for('dashboard', section='usuarios'))
+    
+    if not es_contrasena_valida(password):
+        flash('La contraseña debe tener 8+ caracteres, 1 minúscula, 1 mayúscula, 1 número y 1 símbolo', 'danger')
+        return redirect(url_for('dashboard', section='usuarios'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        hashed = generate_password_hash(password)
+        cur.execute("""
+            INSERT INTO users (username, password, rol, empresa_id)
+            VALUES (%s, %s, %s, %s)
+        """, (username, hashed, rol, session['empresa_id']))
+        conn.commit()
+        flash('Usuario agregado correctamente', 'success')
+    except psycopg2.IntegrityError:
+        flash('El usuario ya existe', 'danger')
+    finally:
+        cur.close()
+        conn.close()
+    
+    return redirect(url_for('dashboard', section='usuarios'))
+
+@app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
+def eliminar_usuario(user_id):
+    if 'username' not in session or session['rol'] != 'admin':
+        flash('No tienes permisos para realizar esta acción', 'danger')
+        return redirect(url_for('dashboard', section='usuarios'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # No permitir eliminar el usuario actual
+    if user_id == session['user_id']:
+        flash('No puedes eliminar tu propio usuario', 'danger')
+    else:
+        cur.execute("""
+            DELETE FROM users 
+            WHERE id = %s AND empresa_id = %s
+        """, (user_id, session['empresa_id']))
+        conn.commit()
+        flash('Usuario eliminado correctamente', 'success')
+    
+    cur.close()
+    conn.close()
+    return redirect(url_for('dashboard', section='usuarios'))
+
+@app.route('/inventario/agregar', methods=['POST'])
+def agregar_inventario():
+    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
+        return redirect(url_for('login'))
+    
+    nombre = request.form['nombre'].strip()
+    descripcion = request.form.get('descripcion', '').strip()
+    cantidad = int(request.form['cantidad'])
+    precio = request.form.get('precio')
+    ubicacion = request.form.get('ubicacion', '').strip()
+    
+    if cantidad < 0:
+        flash('La cantidad no puede ser negativa', 'danger')
+        return redirect(url_for('dashboard', section='inventario'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        precio_val = float(precio) if precio else None
+        cur.execute("""
+            INSERT INTO inventario (
+                empresa_id, nombre, descripcion, cantidad, precio, ubicacion
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            session['empresa_id'], nombre, descripcion, 
+            cantidad, precio_val, ubicacion
+        ))
+        conn.commit()
+        flash('Artículo agregado al inventario', 'success')
+    except Exception as e:
+        app.logger.error(f"Error al agregar artículo: {str(e)}")
+        flash('Error al agregar el artículo', 'danger')
+    finally:
+        cur.close()
+        conn.close()
+    
+    return redirect(url_for('dashboard', section='inventario'))
+
+@app.route('/inventario/editar/<int:item_id>', methods=['GET', 'POST'])
+def editar_inventario(item_id):
+    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Obtener artículo
+    cur.execute("""
+        SELECT id, nombre, descripcion, cantidad, precio, ubicacion
+        FROM inventario
+        WHERE id = %s AND empresa_id = %s
+    """, (item_id, session['empresa_id']))
+    articulo = cur.fetchone()
+    
+    if not articulo:
+        flash('Artículo no encontrado', 'danger')
+        return redirect(url_for('dashboard', section='inventario'))
+    
+    if request.method == 'POST':
+        nombre = request.form['nombre'].strip()
+        descripcion = request.form.get('descripcion', '').strip()
+        cantidad = int(request.form['cantidad'])
+        precio = request.form.get('precio')
+        ubicacion = request.form.get('ubicacion', '').strip()
+        
+        if cantidad < 0:
+            flash('La cantidad no puede ser negativa', 'danger')
+            return render_template('editar_articulo.html', articulo=articulo)
+        
+        try:
+            precio_val = float(precio) if precio else None
+            cur.execute("""
+                UPDATE inventario
+                SET nombre = %s, descripcion = %s, cantidad = %s, 
+                    precio = %s, ubicacion = %s, fecha_actualizacion = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (nombre, descripcion, cantidad, precio_val, ubicacion, item_id))
+            conn.commit()
+            flash('Artículo actualizado correctamente', 'success')
+            return redirect(url_for('dashboard', section='inventario'))
+        except Exception as e:
+            app.logger.error(f"Error al actualizar artículo: {str(e)}")
+            flash('Error al actualizar el artículo', 'danger')
+    
+    # Preparar datos para la plantilla
+    columnas = ['id', 'nombre', 'descripcion', 'cantidad', 'precio', 'ubicacion']
+    datos = dict(zip(columnas, articulo))
+    
+    cur.close()
+    conn.close()
+    return render_template('editar_articulo.html', articulo=datos)
+
+@app.route('/inventario/eliminar/<int:item_id>', methods=['POST'])
+def eliminar_inventario(item_id):
+    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
+        flash('No tienes permisos para realizar esta acción', 'danger')
+        return redirect(url_for('dashboard', section='inventario'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        DELETE FROM inventario
+        WHERE id = %s AND empresa_id = %s
+    """, (item_id, session['empresa_id']))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    flash('Artículo eliminado del inventario', 'success')
+    return redirect(url_for('dashboard', section='inventario'))
 
 @app.route('/exportar_inventario')
 def exportar_inventario():
-    if 'username' not in session or session['rol'] == 'admin':
+    if 'username' not in session:
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -420,141 +644,12 @@ def exportar_inventario():
         }
     )
 
-@app.route('/admin_panel')
-def admin_panel():
-    if 'username' not in session or session['rol'] != 'admin':
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # Obtener todas las empresas
-    cur.execute("SELECT id, nombre, fecha_registro FROM empresas ORDER BY nombre")
-    empresas = cur.fetchall()
-    
-    # Obtener todos los usuarios
-    cur.execute("""
-        SELECT u.id, u.username, u.rol, e.nombre 
-        FROM users u
-        LEFT JOIN empresas e ON u.empresa_id = e.id
-        ORDER BY u.username
-    """)
-    usuarios = cur.fetchall()
-    
-    # Obtener estadísticas
-    cur.execute("SELECT COUNT(*) FROM empresas")
-    num_empresas = cur.fetchone()[0]
-    
-    cur.execute("SELECT COUNT(*) FROM users")
-    num_usuarios = cur.fetchone()[0]
-    
-    cur.execute("SELECT COUNT(*) FROM inventario")
-    num_items = cur.fetchone()[0]
-    
-    cur.close()
-    conn.close()
-    
-    return render_template(
-        'admin.html',
-        empresas=empresas,
-        usuarios=usuarios,
-        num_empresas=num_empresas,
-        num_usuarios=num_usuarios,
-        num_items=num_items
-    )
-
-@app.route('/inventario/editar/<int:item_id>', methods=['GET', 'POST'])
-def editar_articulo(item_id):
-    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # Verificar que el artículo pertenece a la empresa del usuario
-    cur.execute("""
-        SELECT id, nombre, descripcion, cantidad, precio, ubicacion
-        FROM inventario
-        WHERE id = %s AND empresa_id = %s
-    """, (item_id, session['empresa_id']))
-    articulo = cur.fetchone()
-    
-    if not articulo:
-        return "Artículo no encontrado o no tienes permiso", 404
-    
-    if request.method == 'POST':
-        # Lista blanca de campos editables
-        nombre = request.form['nombre'].strip()
-        descripcion = request.form.get('descripcion', '').strip()
-        cantidad = int(request.form['cantidad'])
-        precio = request.form.get('precio')
-        ubicacion = request.form.get('ubicacion', '').strip()
-        
-        # Validar cantidad
-        if cantidad < 0:
-            return "Cantidad no puede ser negativa", 400
-        
-        # Actualizar en base de datos
-        cur.execute("""
-            UPDATE inventario
-            SET nombre = %s, descripcion = %s, cantidad = %s, 
-                precio = %s, ubicacion = %s, fecha_actualizacion = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (nombre, descripcion, cantidad, precio, ubicacion, item_id))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('dashboard'))
-    
-    # Convertir a diccionario para la plantilla
-    columnas = ['id', 'nombre', 'descripcion', 'cantidad', 'precio', 'ubicacion']
-    datos = dict(zip(columnas, articulo))
-    
-    cur.close()
-    conn.close()
-    
-    return render_template('editar_articulo.html', datos=datos)
-
-@app.route('/inventario/agregar', methods=['GET', 'POST'])
-def agregar_inventario():
-    if 'username' not in session or session['rol'] not in ['admin', 'editor']:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        nombre = request.form['nombre'].strip()
-        descripcion = request.form.get('descripcion', '').strip()
-        cantidad = int(request.form['cantidad'])
-        precio = request.form.get('precio')
-        ubicacion = request.form.get('ubicacion', '').strip()
-        
-        if cantidad < 0:
-            return "Cantidad no puede ser negativa", 400
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        cur.execute("""
-            INSERT INTO inventario (
-                empresa_id, nombre, descripcion, cantidad, precio, ubicacion
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-        """, (
-            session['empresa_id'], nombre, descripcion, 
-            cantidad, precio, ubicacion
-        ))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('dashboard'))
-    
-    return render_template('agregar_inventario.html')
-
 @app.route('/logout')
 def logout():
     session.clear()
+    flash('Sesión cerrada correctamente', 'info')
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
     asegurar_esquema()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
