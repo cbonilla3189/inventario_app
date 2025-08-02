@@ -1,0 +1,53 @@
+body {
+    background-color: #f8f8f8;
+  }
+
+.logo-aruna {
+    height: 150px;
+    position: absolute;
+    top: -55px; /* ajusta según se vea */
+    left: 0;
+    z-index: 10;
+}
+
+.sidebar {
+    width: 250px; background-color: #fff;
+    border-right: 1px solid #561d9c; padding: 20px;
+    height: 100vh; position: fixed;
+}
+
+.main-content {
+    margin-left: 250px; padding: 30px;
+}
+
+.initials {
+    width: 60px; height: 60px;
+    background-color: #561d9c; color: #fff;
+    font-size: 24px; font-weight: bold;
+    border-radius: 50%;
+    display: flex; align-items: center;
+    justify-content: center; margin-bottom: 10px;
+}
+
+.nav-link.active { font-weight: bold; color: #561d9c;
+}
+
+.sticky-top { z-index: 1030; 
+}
+
+.bg-purple {
+    background-color: #561d9c !important;
+}
+
+.card { max-width: 500px; margin: 80px auto; 
+}
+
+.center-box {
+    max-width: 400px;
+    margin: auto;
+    margin-top: 100px;
+    padding: 30px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}

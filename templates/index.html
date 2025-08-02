@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/eb496ab1a0.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheet.css') }}">
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <title>ARUNA PANAMA</title>
+</head>
+<body>
+    <div class="encabezado">
+        <div class="container">
+            <input type="checkbox" name="" id="check">
+            <div class="logo-container">
+                <h3 class="logo">ARUNA<span>Panama</span></h3>
+            </div>
+            <div class="nav-btn">
+                <div class="nav-links">
+                    <ul>
+                        <li class="nav-link" style="--i: .6s">
+                            <a href="#Nosotros">Nosotros</a>
+                        </li>
+                        <li class="nav-link" style="--i: .85s">
+                            <a href="#Servicios">Servicios<i class="fas fa-caret-down"></i></a>
+                            <div class="dropdown">
+                                <ul>
+                                    <li class="dropdown-link">
+                                        <a href="servicios.html">Redes y telecomunicaciones</a>
+                                    </li>
+                                    <li class="dropdown-link">
+                                        <a href="servicios.html" id="#Cyberseguridad">Ciberseguridad<i class="fas fa-caret-down"></i></a>
+                                        <div class="dropdown second">
+                                            <ul>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Auditoria de ciberseguridad</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Pentesting</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Control de reisgo informatico</a>
+                                                </li>
+                                                <div class="arrow"></div>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-link">
+                                        <a href="servicios.html" id="#Cyberseguridad">Pá¡ginas web y aplicaciones<i class="fas fa-caret-down"></i></a>
+                                        <div class="dropdown second">
+                                            <ul>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Diseño de pá¡ginas web</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Dominio y Hosting</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Programación de aplicaciones</a>
+                                                </li>
+                                                <div class="arrow"></div>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-link">
+                                        <a href="#">Videovigilancia<i class="fas fa-caret-down"></i></a>
+                                        <div class="dropdown second">
+                                            <ul>
+                                                <li class="dropdown-link">
+                                                    <a href="#">CCTV</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Control de acceso</a>
+                                                </li>
+                                                <div class="arrow"></div>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li class="dropdown-link">
+                                        <a href="#">Inteligencia de negocio<i class="fas fa-caret-down"></i></a>
+                                        <div class="dropdown second">
+                                            <ul>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Inventario</a>
+                                                </li>
+                                                <li class="dropdown-link">
+                                                    <a href="#">Ventas</a>
+                                                </li>
+                                                <div class="arrow"></div>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <div class="arrow"></div>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-link" style="--i: 1.1s">
+                            <a href="#Contacto">Contacto</a>
+                        </li>
+                        <li class="nav-link" style="--i: 1.35s">
+                            <a href="https://www.youtube.com/" target="_blank">Soporte</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="log-sign" style="--i: 1.8s">
+                    <a href="{{ url_for('login') }}" class="btn transparent">Iniciar</a>
+                    <a href="{{ url_for('register') }}" class="btn solid">Registrarse</a>
+                </div>
+            </div>
+            <div class="hamburger-menu-container">
+                <div class="hamburger-menu">
+                    <div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="primera-vista">
+        <img src="imagenes/banner1.jpg" alt="" class="banner1">
+    </div>
+    <div id="Nosotros">
+        <div class="infonosotros">
+            <h2>Empresa panameña fundada por dos ingenieros en el 2023.
+                Especializados en la ciberseguridad, programación de servidores, 
+                automatización de sistemas y tareas para tu empresa. Trabajamos en la inteligencia
+                de negocio, dando detalles predictivos y concretos de como tu empresa esta evolucionando.
+            </h2>
+        </div>
+        <div class="infonosotros">
+            <h1>MAS INFORMACION SOBRE NOSOTROS</h1>
+        </div>
+    </div>
+    <div id="Servicios">
+        <div class="servicios-generales">
+            <div style="background-image: url(imagenes/telecom.jpg); background-position: center center;
+            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Redes y telecomunicaciones</h3></div>
+            <div style="background-image: url(imagenes/cyberseguridad.jpg); background-position: center center;
+            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Cyberseguridad</h3></div>
+            <div style="background-image: url(imagenes/desarrollo-y-diseno-web.jpg); background-position: center center;
+            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Programación Web y aplicaciones</h3></div>
+        </div>
+        <div class="servicios-generales2">
+            <div style="background-image: url(imagenes/cctv.jpg); background-position: center center;
+            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Videovigilancia</h3></div>
+            <div style="background-image: url(imagenes/crm_inteligencia_artificial.jpg); background-position: center center;
+            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Inteligencia de negocio</h3></div>
+        </div>
+        <div class="mas-servicios">
+            <button class="mas-servicios2"><a href="servicios.html">Mas informacion sobres nuestros servicios</a></button>
+        </div>
+    </div>
+    <section id="Contacto" class="contacto">
+        <div class="formulario-container">
+          <h2>Contactanos</h2>
+          <form action="https://formsubmit.co/ventas@arunapanama.com" method="POST" class="formulario-correo">
+            <div class="campo">
+              <label for="name">Nombre</label>
+              <input type="text" name="Nombre" id="name" required>
+            </div>
+      
+            <div class="campo">
+              <label for="apellido">Apellido</label>
+              <input type="text" name="Apellido" id="apellido" required>
+            </div>
+      
+            <div class="campo">
+              <label for="email">Correo Electrónico</label>
+              <input type="email" name="email" id="email" required>
+            </div>
+      
+            <div class="campo">
+              <label for="asunto">Asunto</label>
+              <input type="text" name="asunto" id="asunto">
+            </div>
+      
+            <div class="campo">
+              <label for="comentarios">Comentarios</label>
+              <textarea name="comentarios" id="comentarios" rows="5" required></textarea>
+            </div>
+      
+            <input type="hidden" name="_next" value="https://arunapanama.com">
+            <input type="hidden" name="_captcha" value="false">
+      
+            <button type="submit" class="btn-enviar">Enviar</button>
+          </form>
+        </div>
+      
+        <div class="mapa-container">
+          <iframe src="https://www.google.com/maps/embed?pb=..." width="100%" height="300" style="border:0;" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </section>
+      
+    <a href="https://api.whatsapp.com/send?phone=50767825404" class="boton-ws" target="_blank">
+        <i class="fa fa-whatsapp icono"></i>
+    </a>
+</body>
+</html>

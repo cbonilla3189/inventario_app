@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark bg-purple sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+        <img src="{{ url_for('static', filename='img/aruna_5.png') }}"
+             alt="Logo" class="logo-aruna">
+      </a>
+      <span class="navbar-text text-white">Dashboard</span>
+    </div>
+  </nav>
+
+  <div class="d-flex vh-100">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar d-flex flex-column p-3 border-end" style="width: 280px;">
+
+      <!-- 1) MI COMPAÑÍA -->
+      <div class="mb-4 text-center">
+        <h5>Mi compañía</h5>
+        <p class="mb-1"><strong>{{ company.nombre }}</strong></p>
+        {% if company.direccion %}
+          <small class="text-muted">{{ company.direccion }}</small><br>
+        {% endif %}
+        {% if company.telefono %}
+          <small class="text-muted">?? {{ company.telefono }}</small><br>
+        {% endif %}
+        {% if company.correo %}
+          <small class="text-muted">?? {{ company.correo }}</small>
+        {% endif %}
+      </div>
+      <hr>
+
+      <!-- 2) USUARIOS -->
+      <div class="mb-4">
+        <h6>Usuarios</h6>
+        <ul class="list-unstyled mb-2">
+          {% for u, rol in usuarios_empresa %}
+            <li class="d-flex justify-content-between align-items-center mb-1">
+              <div>
+                <i class="bi bi-person-fill me-1"></i>{{ u }}
+                <small class="text-muted">({{ rol }})</small>
+              </div>
+              <form method="POST" class="m-0 p-0 d-inline">
+                <input type="hidden" name="accion" value="eliminar_usuario">
+                <input type="hidden" name="target_user" value="{{ u }}">
+                <button type="submit"
+                        class="btn btn-sm btn-outline-danger p-1"
+                        title="Eliminar">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </form>
+            </li>
+          {% else %}
+            <li class="text-muted"><small>Sin usuarios</small></li>
+          {% endfor %}
+        </ul>
+
+        <!-- Formulario agregar usuario -->
+        <form method="POST" class="row g-2">
+          <input type="hidden" name="accion" value="agregar_usuario">
+          <div class="col-12">
+            <input type="text"
+                   name="username"
+                   class="form-control form-control-sm"
+                   placeholder="Usuario" required>
+          </div>
+          <div class="col-12">
+            <input type="password"
+                   name="password"
+                   class="form-control form-control-sm"
+                   placeholder="Contraseña" required>
+          </div>
+          <div class="col-12">
+            <select name="rol" class="form-select form-select-sm" required>
+              <option value="editor">Editor</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </div>
+          <div class="col-12 text-end">
+            <button class="btn btn-sm btn-primary w-100">Agregar</button>
+          </div>
+        </form>
+      </div>
+      <hr>
+
+      <!-- 3) INVENTARIO -->
+      <div>
+        <h6>Inventario</h6>
+
+        <!-- Lista de tablas existentes -->
+        <ul class="list-unstyled mb-3">
+          {% for tabla in tablas_disponibles %}
+            <li class="d-flex justify-content-between align-items-center mb-1">
+              <a href="#" 
+                 onclick="document.getElementById('select-table-{{ tabla }}').submit(); return false;"
+                 class="text-decoration-none">
+                <i class="bi bi-table me-1"></i>{{ tabla }}
+              </a>
+              <form id="select-table-{{ tabla }}" method="POST" class="d-none">
+                <input type="hidden" name="accion" value="cambiar_tabla">
+                <input type="hidden" name="tabla_actual" value="{{ tabla }}">
+              </form>
+              <form method="POST" class="m-0 p-0 d-inline">
+                <input type="hidden" name="accion" value="eliminar_tabla">
+                <input type="hidden" name="tabla" value="{{ tabla }}">
+                <button type="submit"
+                        class="btn btn-sm btn-outline-danger p-1"
+                        title="Eliminar tabla">
+                  <i class="bi bi-trash2-fill"></i>
+                </button>
+              </form>
+            </li>
+          {% else %}
+            <li class="text-muted"><small>Sin tablas</small></li>
+          {% endfor %}
+        </ul>
+
+        <!-- Formulario crear tabla -->
+        <form method="POST" class="row g-2 mb-3">
+          <input type="hidden" name="accion" value="crear_tabla">
+          <div class="col-9">
+            <input type="text"
+                   name="nombre_tabla"
+                   class="form-control form-control-sm"
+                   placeholder="Nueva tabla" required>
+          </div>
+          <div class="col-3">
+            <button class="btn btn-sm btn-success w-100">Crear</button>
+          </div>
+        </form>
+
+        {% if tabla_seleccionada %}
+          <hr>
+          <h6>Agregar producto a <em>{{ tabla_seleccionada }}</em></h6>
+          <form method="POST" class="row g-2">
+            <input type="hidden" name="accion" value="agregar_articulo">
+            {% for col in colnames %}
+              {% if col != 'id' %}
+                <div class="col-12">
+                  <label class="form-label small text-capitalize">{{ col }}</label>
+                  <input type="hidden" name="campo[]" value="{{ col }}">
+                              <input type="text"
+                   name="valor[]"
+                   class="form-control form-control-sm"
+                   required>
+                </div>
+              {% endif %}
+            {% endfor %}
+            <div class="col-12 text-end">
+              <button class="btn btn-sm btn-success w-100">Agregar</button>
+            </div>
+          </form>
+        {% endif %}
+
+      </div>
+
+      <hr class="mt-auto">
+
+      <a href="{{ url_for('logout') }}"
+         class="btn btn-outline-danger w-100 mt-2">
+        Cerrar sesión
+      </a>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content flex-fill p-4">
+      {% block content %}
+        <!-- Aquí va tu contenido principal -->
+      {% endblock %}
+    </main>
+
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+  </script>
+</body>
+</html>

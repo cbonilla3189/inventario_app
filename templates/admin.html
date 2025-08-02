@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Panel de administración</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark bg-purple sticky-top">
+    <div class="container-fluid position-relative">
+      <a class="navbar-brand" href="#">
+        <img src="static/img/aruna_5.png" alt="Logo" class="logo-aruna">
+      </a>
+      <span class="navbar-text text-white">Panel de administración</span>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar d-flex flex-column align-items-center text-center">
+    {% if session.username %}
+      <div class="initials">{{ session.username[0] | upper }}</div>
+      <p><strong>{{ session.username }}</strong></p>
+      <p class="text-muted">{{ session.rol | capitalize }}</p>
+    {% endif %}
+    <hr class="w-100">
+    <nav class="nav flex-column w-100 text-center">
+      <a class="nav-link {% if section=='users' %}active{% endif %}"
+         href="{{ url_for('admin_panel', section='users') }}">
+        <i class="bi bi-people-fill"></i> Usuarios
+      </a>
+      <a class="nav-link {% if section=='companias' %}active{% endif %}"
+         href="{{ url_for('admin_panel', section='companias') }}">
+        <i class="bi bi-building"></i> Compañias
+      </a>
+      <a class="nav-link {% if section=='inventario' %}active{% endif %}"
+         href="{{ url_for('admin_panel', section='inventario') }}">
+        <i class="bi bi-box-seam"></i> Inventario
+      </a>
+      <a class="nav-link {% if section=='registro' %}active{% endif %}"
+         href="{{ url_for('admin_panel', section='registro') }}">
+        <i class="bi bi-person-plus-fill"></i> Registro
+      </a>
+    </nav>
+    <hr class="w-100">
+    <a href="{{ url_for('logout') }}"
+       class="btn btn-outline-danger w-100 mt-2">
+       Cerrar sesión
+    </a>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content container mt-4">
+
+    <!-- USUARIOS -->
+    {% if section == 'users' %}
+      <h4>Gestión de Usuarios</h4>
+      <table class="table table-sm table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Empresa</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u[0] }}</td>
+
+            {# Icono + color de rol desde el context_processor #}
+            <td>
+              {% set icon, cls = role_icons.get(u[1], (u[1], '')) %}
+              <span class="{{ cls }}">{{ icon }}</span>
+            </td>
+
+            <td>{{ u[3] or 'Sin asignar' }}</td>
+            <td>
+              {% if u[0] != 'admin' %}
+              <form method="POST" class="d-inline"
+                    onsubmit="return confirm('Â¿Eliminar usuario {{ u[0] }}?');">
+                <input type="hidden" name="accion" value="eliminar_usuario">
+                <input type="hidden" name="username" value="{{ u[0] }}">
+                <button class="btn btn-sm btn-danger">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="accion"      value="editar_usuario">
+                <input type="hidden" name="target_user" value="{{ u[0] }}">
+                <select name="new_role"
+                        class="form-select form-select-sm d-inline w-auto">
+                  <option value="admin"  {% if u[1]=='admin'  %}selected{% endif %}>Admin</option>
+                  <option value="editor" {% if u[1]=='editor' %}selected{% endif %}>Editor</option>
+                  <option value="viewer" {% if u[1]=='viewer' %}selected{% endif %}>Viewer</option>
+                </select>
+                <select name="empresa_id"
+                        class="form-select form-select-sm d-inline w-auto">
+                  <option value="">Sin asignar</option>
+                  {% for id,nombre in lista_empresas %}
+                    <option value="{{ id }}" {% if id==u[2] %}selected{% endif %}>{{ nombre }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-sm btn-primary">Guardar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <!-- COMPAÑIAS -->
+    {% if section == 'companias' %}
+      <h4>Listado de Compañias</h4>
+      <table class="table table-bordered table-sm mt-3">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th><th>Fecha</th><th>Dirección</th>
+            <th>Teléfono</th><th>Correo</th><th>Responsables</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for empresa in companias %}
+          <tr>
+            <td>{{ empresa[1] }}</td>
+            <td>{{ empresa[2] }}</td>
+            <td>{{ empresa[3] or '' }}</td>
+            <td>{{ empresa[4] or '' }}</td>
+            <td>{{ empresa[5] or '' }}</td>
+            <td>
+              <ul class="list-unstyled mb-0">
+                {% for usuario in usuarios_por_empresa %}
+                  {% if usuario[2] == empresa[0] %}
+                    <li>{{ usuario[0] }} ({{ usuario[1] }})</li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </td>
+            <td>
+              <form method="POST" class="d-inline"
+                    onsubmit="return confirm('¿Eliminar esta compañia?');">
+                <input type="hidden" name="accion" value="eliminar_compania">
+                <input type="hidden" name="id"     value="{{ empresa[0] }}">
+                <button class="btn btn-sm btn-danger">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <!-- INVENTARIO -->
+  {% if section == 'inventario' %}
+  <h4>Inventario</h4>
+  <div class="mb-3">
+    <form method="POST" class="d-inline">
+      <input type="hidden" name="accion" value="crear_tabla">
+      <input type="text" name="nombre_tabla"
+             placeholder="Nombre nueva tabla"
+             class="form-control form-control-sm d-inline w-auto">
+      <button class="btn btn-sm btn-success">Crear tabla</button>
+    </form>
+  </div>
+  <ul class="list-group list-group-horizontal mb-3">
+    {% for tabla in inventario %}
+    <li class="list-group-item d-flex align-items-center
+               {% if tabla == tabla_seleccionada %}active{% endif %}">
+      <a href="{{ url_for('admin_panel',
+                           section='inventario',
+                           tabla=tabla) }}">{{ tabla }}</a>
+      {% if tabla not in ['users','empresas','verifications'] %}
+      <form method="POST" class="ms-2 mb-0"
+            onsubmit="return confirm('Â¿Eliminar la tabla {{ tabla }}?');">
+        <input type="hidden" name="accion" value="eliminar_tabla">
+        <input type="hidden" name="tabla" value="{{ tabla }}">
+        <button class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-trash2-fill"></i>
+        </button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% if tabla_seleccionada %}
+    <h5>Columnas de {{ tabla_seleccionada }}</h5>
+    <table class="table table-sm table-bordered">
+      <thead>
+        <tr>
+          <th>Columna</th>
+          <th>Tipo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for col, tipo in columnas_tabla %}
+        <tr>
+          <td>{{ col }}</td>
+          <td>{{ tipo }}</td>
+          <td>
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="accion" value="eliminar_campo_tabla">
+              <input type="hidden" name="tabla" value="{{ tabla_seleccionada }}">
+              <input type="hidden" name="columna" value="{{ col }}">
+              <button class="btn btn-sm btn-danger">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="POST" class="mt-2">
+      <input type="hidden" name="accion" value="agregar_campo_tabla">
+      <input type="hidden" name="tabla" value="{{ tabla_seleccionada }}">
+      <input type="text" name="nombre_campo"
+             placeholder="Nombre campo"
+             class="form-control form-control-sm d-inline w-auto">
+      <select name="tipo_dato"
+              class="form-select form-select-sm d-inline w-auto">
+        <option value="varchar(100)">Texto</option>
+        <option value="integer">Número</option>
+        <option value="date">Fecha</option>
+      </select>
+      <button class="btn btn-sm btn-primary">Agregar campo</button>
+    </form>
+  {% endif %}
+{% endif %}
+
+<!-- REGISTRO -->
+{% if section == 'registro' %}
+  <h4>Registrar Nuevo</h4>
+  <ul class="nav nav-tabs mt-3">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#registro-usuario">
+        Nuevo Usuario
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#registro-compania">
+        Nueva Compañia
+      </a>
+    </li>
+  </ul>
+  <div class="tab-content mt-4">
+    <div id="registro-usuario" class="tab-pane fade show active">
+      <form method="POST">
+        <input type="hidden" name="accion" value="usuario">
+        <div class="mb-3">
+          <label class="form-label">Correo*</label>
+          <input type="email" name="username"
+                 class="form-control form-control-sm" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña*</label>
+          <input type="password" name="password"
+                 class="form-control form-control-sm"
+                 minlength="8" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Rol</label>
+          <select name="rol" class="form-select form-select-sm">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Empresa*</label>
+          <select name="empresa_id"
+                  class="form-select form-select-sm" required>
+            <option value="">-- Seleccione empresa --</option>
+            {% for id, nombre in lista_empresas %}
+              <option value="{{ id }}">{{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-sm btn-primary">Registrar Usuario</button>
+      </form>
+    </div>
+    <div id="registro-compania" class="tab-pane fade">
+      <form method="POST">
+        <input type="hidden" name="accion" value="empresa">
+        <div class="mb-3">
+          <label class="form-label">Nombre compañia*</label>
+          <input type="text" name="nombre_empresa"
+                 class="form-control form-control-sm" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="direccion"
+                 class="form-control form-control-sm">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono"
+                 class="form-control form-control-sm">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Correo electrónico</label>
+          <input type="email" name="correo"
+                 class="form-control form-control-sm">
+        </div>
+        <button class="btn btn-sm btn-success">Registrar Compañia</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+</div> <!-- /main-content -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
