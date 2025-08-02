@@ -13,6 +13,8 @@ from email.mime.text import MIMEText
 from email.header import Header
 from io import StringIO
 from datetime import datetime, timedelta
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
+
 
 app = Flask(__name__)
 app.secret_key = 'reemplaza_con_una_clave_super_segura'
@@ -522,6 +524,7 @@ def logout():
 if __name__ == '__main__':
     asegurar_esquema()
     app.run(debug=True)
+
 
 
 
