@@ -162,30 +162,34 @@ def login():
     
     error = None
     if request.method == 'POST':
-        username = request.form['username'].strip().lower()
+        username = request.form['username'].strip()  # Eliminado .lower()
         password = request.form['password']
         
         conn = get_db_connection()
         cur = conn.cursor()
+        
+        # Búsqueda case-insensitive
         cur.execute("""
-            SELECT id, password, rol, empresa_id 
+            SELECT id, username, password, rol, empresa_id 
             FROM users 
-            WHERE username = %s
+            WHERE LOWER(username) = LOWER(%s)
         """, (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
 
-        if user and check_password_hash(user[1], password):
+        if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
-            session['username'] = username
-            session['rol'] = user[2]
-            session['empresa_id'] = user[3]
+            session['username'] = user[1]  # Usar el username de la BD
+            session['rol'] = user[3]
+            session['empresa_id'] = user[4]
             
+            app.logger.info(f"Usuario autenticado: {user[1]}, Rol: {user[3]}, Empresa ID: {user[4]}")
             flash('Inicio de sesión exitoso', 'success')
             return redirect(url_for('dashboard'))
-        
-        error = "Usuario o contraseña incorrectos"
+        else:
+            app.logger.warning(f"Intento fallido: {username}")
+            error = "Usuario o contraseña incorrectos"
     
     return render_template('login.html', error=error)
 
@@ -339,6 +343,12 @@ def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     
+    # Determinar qué template usar según el rol
+    if session['rol'] == 'admin':
+        template_name = 'admin.html'
+    else:
+        template_name = 'dashboard.html'
+    
     # Obtener sección actual (default: 'compania')
     section = request.args.get('section', 'compania')
     
@@ -396,7 +406,7 @@ def dashboard():
     } if empresa else None
     
     return render_template(
-        'dashboard.html',
+        template_name,  # Usar la plantilla adecuada según el rol
         section=section,
         empresa=empresa_data,
         usuarios=usuarios,
@@ -653,5 +663,3 @@ def logout():
 if __name__ == '__main__':
     asegurar_esquema()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
