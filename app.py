@@ -158,11 +158,15 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'username' in session:
-        return redirect(url_for('dashboard'))
+        # Redirigir según el rol si ya está autenticado
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('user_dashboard'))
     
     error = None
     if request.method == 'POST':
-        username = request.form['username'].strip()  # Eliminado .lower()
+        username = request.form['username'].strip()
         password = request.form['password']
         
         conn = get_db_connection()
@@ -181,12 +185,16 @@ def login():
         if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
             session['username'] = user[1]  # Usar el username de la BD
-            session['rol'] = user[3]
+            session['rol'] = user[3].lower()  # Normalizar rol a minúsculas
             session['empresa_id'] = user[4]
             
-            app.logger.info(f"Usuario autenticado: {user[1]}, Rol: {user[3]}, Empresa ID: {user[4]}")
-            flash('Inicio de sesión exitoso', 'success')
-            return redirect(url_for('dashboard'))
+            app.logger.info(f"Usuario autenticado: {user[1]}, Rol: {user[3]}")
+            
+            # Redirigir según el rol
+            if session['rol'] == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('user_dashboard'))
         else:
             app.logger.warning(f"Intento fallido: {username}")
             error = "Usuario o contraseña incorrectos"
@@ -196,7 +204,11 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if 'username' in session:
-        return redirect(url_for('dashboard'))
+        # Redirigir según el rol si ya está autenticado
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('user_dashboard'))
     
     error = None
     if request.method == 'POST':
@@ -254,7 +266,11 @@ def register():
 @app.route('/verify/<int:verif_id>', methods=['GET', 'POST'])
 def verify(verif_id):
     if 'username' in session:
-        return redirect(url_for('dashboard'))
+        # Redirigir según el rol si ya está autenticado
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return redirect(url_for('user_dashboard'))
     
     error = None
     resent = request.args.get('resent')
@@ -338,18 +354,50 @@ def resend(verif_id):
     
     return redirect(url_for('verify', verif_id=verif_id, resent=1))
 
-@app.route('/dashboard')
-def dashboard():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    # Obtener sección actual (default: 'compania')
-    section = request.args.get('section', 'compania')
-    
+def get_dashboard_data(empresa_id):
+    """Obtiene los datos comunes para ambos dashboards."""
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # ... (código para obtener datos de empresa, usuarios, inventario) ...
+    # Obtener información de la empresa
+    cur.execute("""
+        SELECT nombre, direccion, telefono, correo 
+        FROM empresas 
+        WHERE id = %s
+    """, (empresa_id,))
+    empresa = cur.fetchone()
+    
+    # Obtener usuarios de la empresa
+    cur.execute("""
+        SELECT id, username, rol 
+        FROM users 
+        WHERE empresa_id = %s
+        ORDER BY username
+    """, (empresa_id,))
+    usuarios = cur.fetchall()
+    
+    # Obtener inventario
+    cur.execute("""
+        SELECT id, nombre, descripcion, cantidad, precio, ubicacion
+        FROM inventario
+        WHERE empresa_id = %s
+        ORDER BY nombre
+    """, (empresa_id,))
+    inventario = cur.fetchall()
+    
+    # Obtener estadísticas para la sección de compañía
+    cur.execute("""
+        SELECT COUNT(*) FROM inventario WHERE empresa_id = %s
+    """, (empresa_id,))
+    total_articulos = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT COUNT(*) FROM users WHERE empresa_id = %s
+    """, (empresa_id,))
+    total_usuarios = cur.fetchone()[0]
+    
+    cur.close()
+    conn.close()
     
     # Preparar datos para la plantilla
     empresa_data = {
@@ -361,25 +409,58 @@ def dashboard():
         'total_usuarios': total_usuarios
     } if empresa else None
     
-    # Renderizar plantilla adecuada según rol - CORRECCIÓN CLAVE
-    if session['rol'] == 'admin':
-        return render_template(
-            'admin.html',
-            section=section,
-            empresa=empresa_data,
-            usuarios=usuarios,
-            inventario=inventario,
-            rol=session['rol']
-        )
-    else:
-        return render_template(
-            'dashboard.html',
-            section=section,
-            empresa=empresa_data,
-            usuarios=usuarios,
-            inventario=inventario,
-            rol=session['rol']
-        )
+    return {
+        'empresa': empresa_data,
+        'usuarios': usuarios,
+        'inventario': inventario,
+        'total_articulos': total_articulos,
+        'total_usuarios': total_usuarios
+    }
+
+@app.route('/admin')
+def admin_dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    if session['rol'] != 'admin':
+        flash('No tienes permisos para acceder a esta página', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    # Obtener sección actual (default: 'compania')
+    section = request.args.get('section', 'compania')
+    
+    # Obtener datos del dashboard
+    data = get_dashboard_data(session['empresa_id'])
+    
+    return render_template(
+        'admin.html',
+        section=section,
+        empresa=data['empresa'],
+        usuarios=data['usuarios'],
+        inventario=data['inventario'],
+        rol=session['rol']
+    )
+
+@app.route('/dashboard')
+def user_dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Obtener sección actual (default: 'compania')
+    section = request.args.get('section', 'compania')
+    
+    # Obtener datos del dashboard
+    data = get_dashboard_data(session['empresa_id'])
+    
+    return render_template(
+        'dashboard.html',
+        section=section,
+        empresa=data['empresa'],
+        usuarios=data['usuarios'],
+        inventario=data['inventario'],
+        rol=session['rol']
+    )
+
 @app.route('/compania/editar', methods=['POST'])
 def editar_compania():
     if 'username' not in session or session['rol'] not in ['admin', 'editor']:
@@ -403,13 +484,18 @@ def editar_compania():
     conn.close()
     
     flash('Información de la compañía actualizada correctamente', 'success')
-    return redirect(url_for('dashboard', section='compania'))
+    
+    # Redirigir según el rol
+    if session['rol'] == 'admin':
+        return redirect(url_for('admin_dashboard', section='compania'))
+    else:
+        return redirect(url_for('user_dashboard', section='compania'))
 
 @app.route('/usuarios/agregar', methods=['POST'])
 def agregar_usuario():
     if 'username' not in session or session['rol'] != 'admin':
         flash('No tienes permisos para realizar esta acción', 'danger')
-        return redirect(url_for('dashboard', section='usuarios'))
+        return redirect(url_for('admin_dashboard', section='usuarios'))
     
     username = request.form['username'].strip().lower()
     password = request.form['password']
@@ -417,11 +503,11 @@ def agregar_usuario():
     
     if not es_correo_valido(username):
         flash('Formato de correo inválido', 'danger')
-        return redirect(url_for('dashboard', section='usuarios'))
+        return redirect(url_for('admin_dashboard', section='usuarios'))
     
     if not es_contrasena_valida(password):
         flash('La contraseña debe tener 8+ caracteres, 1 minúscula, 1 mayúscula, 1 número y 1 símbolo', 'danger')
-        return redirect(url_for('dashboard', section='usuarios'))
+        return redirect(url_for('admin_dashboard', section='usuarios'))
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -440,13 +526,13 @@ def agregar_usuario():
         cur.close()
         conn.close()
     
-    return redirect(url_for('dashboard', section='usuarios'))
+    return redirect(url_for('admin_dashboard', section='usuarios'))
 
 @app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
 def eliminar_usuario(user_id):
     if 'username' not in session or session['rol'] != 'admin':
         flash('No tienes permisos para realizar esta acción', 'danger')
-        return redirect(url_for('dashboard', section='usuarios'))
+        return redirect(url_for('admin_dashboard', section='usuarios'))
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -464,7 +550,7 @@ def eliminar_usuario(user_id):
     
     cur.close()
     conn.close()
-    return redirect(url_for('dashboard', section='usuarios'))
+    return redirect(url_for('admin_dashboard', section='usuarios'))
 
 @app.route('/inventario/agregar', methods=['POST'])
 def agregar_inventario():
@@ -479,7 +565,11 @@ def agregar_inventario():
     
     if cantidad < 0:
         flash('La cantidad no puede ser negativa', 'danger')
-        return redirect(url_for('dashboard', section='inventario'))
+        # Redirigir según el rol
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard', section='inventario'))
+        else:
+            return redirect(url_for('user_dashboard', section='inventario'))
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -503,7 +593,11 @@ def agregar_inventario():
         cur.close()
         conn.close()
     
-    return redirect(url_for('dashboard', section='inventario'))
+    # Redirigir según el rol
+    if session['rol'] == 'admin':
+        return redirect(url_for('admin_dashboard', section='inventario'))
+    else:
+        return redirect(url_for('user_dashboard', section='inventario'))
 
 @app.route('/inventario/editar/<int:item_id>', methods=['GET', 'POST'])
 def editar_inventario(item_id):
@@ -523,7 +617,11 @@ def editar_inventario(item_id):
     
     if not articulo:
         flash('Artículo no encontrado', 'danger')
-        return redirect(url_for('dashboard', section='inventario'))
+        # Redirigir según el rol
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard', section='inventario'))
+        else:
+            return redirect(url_for('user_dashboard', section='inventario'))
     
     if request.method == 'POST':
         nombre = request.form['nombre'].strip()
@@ -546,7 +644,12 @@ def editar_inventario(item_id):
             """, (nombre, descripcion, cantidad, precio_val, ubicacion, item_id))
             conn.commit()
             flash('Artículo actualizado correctamente', 'success')
-            return redirect(url_for('dashboard', section='inventario'))
+            
+            # Redirigir según el rol
+            if session['rol'] == 'admin':
+                return redirect(url_for('admin_dashboard', section='inventario'))
+            else:
+                return redirect(url_for('user_dashboard', section='inventario'))
         except Exception as e:
             app.logger.error(f"Error al actualizar artículo: {str(e)}")
             flash('Error al actualizar el artículo', 'danger')
@@ -563,7 +666,7 @@ def editar_inventario(item_id):
 def eliminar_inventario(item_id):
     if 'username' not in session or session['rol'] not in ['admin', 'editor']:
         flash('No tienes permisos para realizar esta acción', 'danger')
-        return redirect(url_for('dashboard', section='inventario'))
+        return redirect(url_for('user_dashboard', section='inventario'))
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -578,7 +681,12 @@ def eliminar_inventario(item_id):
     conn.close()
     
     flash('Artículo eliminado del inventario', 'success')
-    return redirect(url_for('dashboard', section='inventario'))
+    
+    # Redirigir según el rol
+    if session['rol'] == 'admin':
+        return redirect(url_for('admin_dashboard', section='inventario'))
+    else:
+        return redirect(url_for('user_dashboard', section='inventario'))
 
 @app.route('/exportar_inventario')
 def exportar_inventario():
@@ -629,4 +737,3 @@ def logout():
 if __name__ == '__main__':
     asegurar_esquema()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
