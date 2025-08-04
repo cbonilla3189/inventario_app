@@ -343,57 +343,13 @@ def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    # Determinar qué template usar según el rol
-    if session['rol'] == 'admin':
-        template_name = 'admin.html'
-    else:
-        template_name = 'dashboard.html'
-    
     # Obtener sección actual (default: 'compania')
     section = request.args.get('section', 'compania')
     
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Obtener información de la empresa
-    cur.execute("""
-        SELECT nombre, direccion, telefono, correo 
-        FROM empresas 
-        WHERE id = %s
-    """, (session['empresa_id'],))
-    empresa = cur.fetchone()
-    
-    # Obtener usuarios de la empresa
-    cur.execute("""
-        SELECT id, username, rol 
-        FROM users 
-        WHERE empresa_id = %s
-        ORDER BY username
-    """, (session['empresa_id'],))
-    usuarios = cur.fetchall()
-    
-    # Obtener inventario
-    cur.execute("""
-        SELECT id, nombre, descripcion, cantidad, precio, ubicacion
-        FROM inventario
-        WHERE empresa_id = %s
-        ORDER BY nombre
-    """, (session['empresa_id'],))
-    inventario = cur.fetchall()
-    
-    # Obtener estadísticas para la sección de compañía
-    cur.execute("""
-        SELECT COUNT(*) FROM inventario WHERE empresa_id = %s
-    """, (session['empresa_id'],))
-    total_articulos = cur.fetchone()[0]
-    
-    cur.execute("""
-        SELECT COUNT(*) FROM users WHERE empresa_id = %s
-    """, (session['empresa_id'],))
-    total_usuarios = cur.fetchone()[0]
-    
-    cur.close()
-    conn.close()
+    # ... (código para obtener datos de empresa, usuarios, inventario) ...
     
     # Preparar datos para la plantilla
     empresa_data = {
@@ -405,15 +361,25 @@ def dashboard():
         'total_usuarios': total_usuarios
     } if empresa else None
     
-    return render_template(
-        template_name,  # Usar la plantilla adecuada según el rol
-        section=section,
-        empresa=empresa_data,
-        usuarios=usuarios,
-        inventario=inventario,
-        rol=session['rol']
-    )
-
+    # Renderizar plantilla adecuada según rol - CORRECCIÓN CLAVE
+    if session['rol'] == 'admin':
+        return render_template(
+            'admin.html',
+            section=section,
+            empresa=empresa_data,
+            usuarios=usuarios,
+            inventario=inventario,
+            rol=session['rol']
+        )
+    else:
+        return render_template(
+            'dashboard.html',
+            section=section,
+            empresa=empresa_data,
+            usuarios=usuarios,
+            inventario=inventario,
+            rol=session['rol']
+        )
 @app.route('/compania/editar', methods=['POST'])
 def editar_compania():
     if 'username' not in session or session['rol'] not in ['admin', 'editor']:
@@ -663,3 +629,4 @@ def logout():
 if __name__ == '__main__':
     asegurar_esquema()
     app.run(host='0.0.0.0', port=5000, debug=True)
+
