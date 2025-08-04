@@ -51,7 +51,7 @@ DB_CONFIG = {
     'port': os.getenv('DB_PORT', '5432'),
     'database': os.getenv('DB_NAME'),
     'user': os.getenv('DB_USER'),
-    'password': get_db_password()  # Usar la contraseña manejada de forma segura
+    'password': get_db_password()
 }
 
 # Configuración de correo
@@ -65,9 +65,7 @@ EMAIL_CONFIG = {
 # Pool de conexiones
 def create_connection_pool():
     try:
-        logger.info("Intentando crear pool de conexiones...")
-        logger.info(f"DB Config: {DB_CONFIG['host']}, {DB_CONFIG['port']}, {DB_CONFIG['database']}, {DB_CONFIG['user']}")
-        
+        logger.info("Creando pool de conexiones...")
         conn_pool = pool.SimpleConnectionPool(
             minconn=1,
             maxconn=10,
@@ -90,7 +88,6 @@ def get_db_connection():
     if 'db_conn' not in g:
         try:
             g.db_conn = connection_pool.getconn()
-            logger.info("Conexión obtenida del pool")
             return g.db_conn
         except Exception as e:
             logger.error(f"Error obteniendo conexión: {str(e)}")
@@ -103,7 +100,6 @@ def close_conn(e=None):
     if db_conn and connection_pool:
         try:
             connection_pool.putconn(db_conn)
-            logger.info("Conexión devuelta al pool")
         except Exception as e:
             logger.error(f"Error devolviendo conexión: {str(e)}")
 
@@ -126,7 +122,6 @@ def send_verification_email(to_email, code):
             server.starttls()
             server.login(EMAIL_CONFIG['user'], EMAIL_CONFIG['password'])
             server.send_message(msg)
-        logger.info(f"Correo enviado a {to_email}")
         return True
     except Exception as e:
         logger.error(f"Error enviando correo: {str(e)}")
@@ -135,12 +130,10 @@ def send_verification_email(to_email, code):
 def init_db():
     conn = get_db_connection()
     if not conn:
-        logger.error("No se pudo obtener conexión para inicializar DB")
         return False
         
     try:
         cur = conn.cursor()
-        logger.info("Inicializando esquema de base de datos...")
         
         queries = [
             """
@@ -194,7 +187,6 @@ def init_db():
             cur.execute(query)
         
         conn.commit()
-        logger.info("Esquema de base de datos inicializado correctamente")
         return True
     except Exception as e:
         logger.error(f"Error inicializando DB: {str(e)}")
@@ -203,76 +195,69 @@ def init_db():
         if cur:
             cur.close()
 
-# Middleware para verificar sesión
-@app.before_request
-def check_session():
-    # Permitir acceso a estas rutas sin sesión
-    public_routes = ['login', 'register', 'verify', 'resend_code', 'static', 'index']
-    
-    if request.endpoint in public_routes:
-        return
-    
-    if 'username' not in session:
-        flash('Debe iniciar sesión para acceder a esta página', 'danger')
-        return redirect(url_for('login'))
-    
-    # Verificar rol para rutas de admin
-    admin_routes = ['admin_dashboard', 'agregar_usuario', 'eliminar_usuario']
-    
-    if request.endpoint in admin_routes:
-        if session.get('rol') != 'admin':
-            flash('Acceso no autorizado', 'danger')
-            return redirect(url_for('user_dashboard'))
-
 # Rutas de la aplicación
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
-def login_submit():
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'username' in session:
+        if session['rol'] == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('user_dashboard'))
     
-    conn = get_db_connection()
-    if not conn:
-        flash('Error de conexión a la base de datos', 'danger')
-        return render_template('login.html')
+    error = None
     
-    try:
-        cur = conn.cursor()
-        # VERIFICACIÓN DE USUARIO Y ROL
-        cur.execute("""
-            SELECT id, username, password, rol, empresa_id 
-            FROM users 
-            WHERE LOWER(username) = LOWER(%s) AND rol = 'admin'
-        """, (username,))
-        user = cur.fetchone()
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
         
-        if user:
-            # VERIFICACIÓN DE CONTRASEÑA
-            if check_password_hash(user[2], password):
-                session['user_id'] = user[0]
-                session['username'] = user[1]
-                session['rol'] = user[3].lower()
-                session['empresa_id'] = user[4]
-                
-                # Redirigir a admin.html si es admin
-                if session['rol'] == 'admin':
-                    return redirect(url_for('admin_dashboard'))
-                else:
-                    return redirect(url_for('user_dashboard'))
-            else:
-                flash('Contraseña incorrecta', 'danger')
+        if not username or not password:
+            error = "Usuario y contraseña son requeridos"
         else:
-            flash('Usuario admin no encontrado o no tiene privilegios', 'danger')
-    except Exception as e:
-        app.logger.error(f"Error en login: {str(e)}")
-        flash('Error interno del servidor', 'danger')
-    finally:
-        cur.close()
+            conn = get_db_connection()
+            if not conn:
+                error = 'Error de conexión a la base de datos'
+            else:
+                try:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT id, username, password, rol, empresa_id 
+                        FROM users 
+                        WHERE LOWER(username) = LOWER(%s)
+                    """, (username,))
+                    user = cur.fetchone()
+                    
+                    if user:
+                        if check_password_hash(user[2], password):
+                            session['user_id'] = user[0]
+                            session['username'] = user[1]
+                            session['rol'] = user[3].lower()
+                            session['empresa_id'] = user[4]
+                            
+                            logger.info(f"Login exitoso: {user[1]}, Rol: {session['rol']}")
+                            
+                            # Redirigir según rol con LOGS DETALLADOS
+                            if session['rol'] == 'admin':
+                                logger.info("Redirigiendo a ADMIN dashboard")
+                                return redirect(url_for('admin_dashboard'))
+                            else:
+                                logger.info("Redirigiendo a USER dashboard")
+                                return redirect(url_for('user_dashboard'))
+                        else:
+                            error = 'Contraseña incorrecta'
+                    else:
+                        error = 'Usuario no encontrado'
+                except Exception as e:
+                    logger.error(f"Error en login: {str(e)}")
+                    error = 'Error interno del servidor'
+                finally:
+                    if cur:
+                        cur.close()
     
-    return render_template('login.html')
+    return render_template('login.html', error=error)
+
 @app.route('/register', methods=['GET'])
 def register_page():
     if 'username' in session:
@@ -288,7 +273,6 @@ def register_submit():
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('user_dashboard'))
     
-    # Recoger datos
     nombre_emp = request.form.get('nombre_empresa', '').strip()
     username = request.form.get('username', '').strip().lower()
     password = request.form.get('password', '')
@@ -296,7 +280,6 @@ def register_submit():
     telefono = request.form.get('telefono', '').strip()
     correo_emp = request.form.get('correo_empresa', '').strip().lower()
 
-    # Validaciones
     error = None
     if not nombre_emp or not username or not password:
         error = "Los campos marcados con * son obligatorios."
@@ -314,18 +297,14 @@ def register_submit():
     
     try:
         cur = conn.cursor()
-        
-        # Verificar si la empresa ya existe
         cur.execute("SELECT id FROM empresas WHERE LOWER(nombre) = LOWER(%s)", (nombre_emp,))
         if cur.fetchone():
             error = f"La empresa '{nombre_emp}' ya está registrada."
             return render_template('register.html', error=error)
         
-        # Generar código de verificación
         code = ''.join(random.choices('0123456789', k=6))
         hashed = generate_password_hash(password)
         
-        # Guardar en verificaciones
         cur.execute("""
             INSERT INTO verifications (
                 nombre_empresa, direccion, telefono, 
@@ -339,7 +318,6 @@ def register_submit():
         verif_id = cur.fetchone()[0]
         conn.commit()
         
-        # Enviar correo
         if send_verification_email(username, code):
             return redirect(url_for('verify', verif_id=verif_id))
         else:
@@ -386,13 +364,11 @@ def verify(verif_id):
                 else:
                     nombre_emp, direccion, telefono, correo_emp, username, hashed, code_db, created_at = row
                     
-                    # Validar código y tiempo
                     if datetime.utcnow() - created_at > timedelta(minutes=15):
                         error = "El código ha caducado. Solicita uno nuevo."
                     elif code_input != code_db:
                         error = "Código incorrecto. Intenta nuevamente."
                     else:
-                        # Registrar empresa
                         cur.execute("""
                             INSERT INTO empresas (nombre, direccion, telefono, correo)
                             VALUES (%s, %s, %s, %s)
@@ -400,13 +376,11 @@ def verify(verif_id):
                         """, (nombre_emp, direccion, telefono, correo_emp))
                         empresa_id = cur.fetchone()[0]
                         
-                        # Registrar usuario
                         cur.execute("""
                             INSERT INTO users (username, password, rol, empresa_id)
                             VALUES (%s, %s, 'editor', %s)
                         """, (username, hashed, empresa_id))
                         
-                        # Eliminar verificación
                         cur.execute("DELETE FROM verifications WHERE id = %s", (verif_id,))
                         conn.commit()
                         
@@ -438,7 +412,6 @@ def resend_code(verif_id):
         username = row[0]
         new_code = ''.join(random.choices('0123456789', k=6))
         
-        # Actualizar código
         cur.execute("""
             UPDATE verifications
             SET code = %s, created_at = CURRENT_TIMESTAMP
@@ -446,7 +419,6 @@ def resend_code(verif_id):
         """, (new_code, verif_id))
         conn.commit()
         
-        # Reenviar correo
         if send_verification_email(username, new_code):
             return redirect(url_for('verify', verif_id=verif_id, resent=1))
         else:
@@ -460,14 +432,21 @@ def resend_code(verif_id):
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    if 'username' not in session or session.get('rol') != 'admin':
-        flash('Acceso no autorizado', 'danger')
+    # VERIFICACIÓN DOBLE DE ROL
+    if 'username' not in session:
+        logger.warning("Intento de acceso a admin_dashboard sin sesión")
+        flash('Debe iniciar sesión primero', 'danger')
         return redirect(url_for('login'))
     
-    # Obtener sección actual
+    if session.get('rol') != 'admin':
+        logger.warning(f"Intento de acceso no autorizado a admin_dashboard por {session.get('username')}")
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    logger.info(f"Acceso autorizado a admin_dashboard por {session.get('username')}")
+    
     section = request.args.get('section', 'compania')
     
-    # Obtener datos de la empresa
     conn = get_db_connection()
     if not conn:
         flash('Error de conexión a la base de datos', 'danger')
@@ -475,8 +454,6 @@ def admin_dashboard():
     
     try:
         cur = conn.cursor()
-        
-        # Información de la empresa
         cur.execute("""
             SELECT nombre, direccion, telefono, correo 
             FROM empresas 
@@ -484,7 +461,6 @@ def admin_dashboard():
         """, (session['empresa_id'],))
         empresa = cur.fetchone()
         
-        # Usuarios de la empresa
         cur.execute("""
             SELECT id, username, rol 
             FROM users 
@@ -493,7 +469,6 @@ def admin_dashboard():
         """, (session['empresa_id'],))
         usuarios = cur.fetchall()
         
-        # Inventario
         cur.execute("""
             SELECT id, nombre, descripcion, cantidad, precio, ubicacion
             FROM inventario
@@ -502,14 +477,12 @@ def admin_dashboard():
         """, (session['empresa_id'],))
         inventario = cur.fetchall()
         
-        # Estadísticas
         cur.execute("SELECT COUNT(*) FROM inventario WHERE empresa_id = %s", (session['empresa_id'],))
         total_articulos = cur.fetchone()[0]
         
         cur.execute("SELECT COUNT(*) FROM users WHERE empresa_id = %s", (session['empresa_id'],))
         total_usuarios = cur.fetchone()[0]
         
-        # Preparar datos
         empresa_data = {
             'nombre': empresa[0],
             'direccion': empresa[1] or 'No especificada',
@@ -517,7 +490,7 @@ def admin_dashboard():
             'correo': empresa[3] or 'No especificado',
             'total_articulos': total_articulos,
             'total_usuarios': total_usuarios
-        } if empresa else None
+        }
         
         return render_template(
             'admin.html',
@@ -541,10 +514,8 @@ def user_dashboard():
         flash('Debe iniciar sesión para acceder a esta página', 'danger')
         return redirect(url_for('login'))
     
-    # Obtener sección actual
     section = request.args.get('section', 'compania')
     
-    # Obtener datos de la empresa
     conn = get_db_connection()
     if not conn:
         flash('Error de conexión a la base de datos', 'danger')
@@ -552,8 +523,6 @@ def user_dashboard():
     
     try:
         cur = conn.cursor()
-        
-        # Información de la empresa
         cur.execute("""
             SELECT nombre, direccion, telefono, correo 
             FROM empresas 
@@ -561,7 +530,6 @@ def user_dashboard():
         """, (session['empresa_id'],))
         empresa = cur.fetchone()
         
-        # Inventario (los usuarios normales no ven otros usuarios)
         cur.execute("""
             SELECT id, nombre, descripcion, cantidad, precio, ubicacion
             FROM inventario
@@ -570,18 +538,16 @@ def user_dashboard():
         """, (session['empresa_id'],))
         inventario = cur.fetchall()
         
-        # Estadísticas
         cur.execute("SELECT COUNT(*) FROM inventario WHERE empresa_id = %s", (session['empresa_id'],))
         total_articulos = cur.fetchone()[0]
         
-        # Preparar datos
         empresa_data = {
             'nombre': empresa[0],
             'direccion': empresa[1] or 'No especificada',
             'telefono': empresa[2] or 'No especificado',
             'correo': empresa[3] or 'No especificado',
             'total_articulos': total_articulos,
-        } if empresa else None
+        }
         
         return render_template(
             'dashboard.html',
@@ -617,4 +583,3 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
