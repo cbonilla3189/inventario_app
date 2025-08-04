@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta http-equiv="Content-Type" content="">
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
@@ -33,7 +32,7 @@
                                         <a href="servicios.html">Redes y telecomunicaciones</a>
                                     </li>
                                     <li class="dropdown-link">
-                                        <a href="servicios.html" id="#Cyberseguridad">Ciberseguridad<i class="fas fa-caret-down"></i></a>
+                                        <a href="servicios.html" id="Cyberseguridad">Ciberseguridad<i class="fas fa-caret-down"></i></a>
                                         <div class="dropdown second">
                                             <ul>
                                                 <li class="dropdown-link">
@@ -43,18 +42,18 @@
                                                     <a href="#">Pentesting</a>
                                                 </li>
                                                 <li class="dropdown-link">
-                                                    <a href="#">Control de reisgo informatico</a>
+                                                    <a href="#">Control de riesgo informatico</a>
                                                 </li>
                                                 <div class="arrow"></div>
                                             </ul>
                                         </div>
                                     </li>
                                     <li class="dropdown-link">
-                                        <a href="servicios.html" id="#Cyberseguridad">Pá¡ginas web y aplicaciones<i class="fas fa-caret-down"></i></a>
+                                        <a href="servicios.html" id="WebApps">Páginas web y aplicaciones<i class="fas fa-caret-down"></i></a>
                                         <div class="dropdown second">
                                             <ul>
                                                 <li class="dropdown-link">
-                                                    <a href="#">Diseño de pá¡ginas web</a>
+                                                    <a href="#">Diseño de páginas web</a>
                                                 </li>
                                                 <li class="dropdown-link">
                                                     <a href="#">Dominio y Hosting</a>
@@ -119,7 +118,7 @@
         </div>
     </div>
     <div class="primera-vista">
-        <img src="imagenes/banner1.jpg" alt="" class="banner1">
+        <img src="{{ url_for('static', filename='img/banner1.jpg') }}" alt="Banner ARUNA" class="banner1">
     </div>
     <div id="Nosotros">
         <div class="infonosotros">
@@ -130,31 +129,26 @@
             </h2>
         </div>
         <div class="infonosotros">
-            <h1>MAS INFORMACION SOBRE NOSOTROS</h1>
+            <h1>MÁS INFORMACIÓN SOBRE NOSOTROS</h1>
         </div>
     </div>
     <div id="Servicios">
         <div class="servicios-generales">
-            <div style="background-image: url(imagenes/telecom.jpg); background-position: center center;
-            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Redes y telecomunicaciones</h3></div>
-            <div style="background-image: url(imagenes/cyberseguridad.jpg); background-position: center center;
-            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Cyberseguridad</h3></div>
-            <div style="background-image: url(imagenes/desarrollo-y-diseno-web.jpg); background-position: center center;
-            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Programación Web y aplicaciones</h3></div>
+            <div style="background-image: url('{{ url_for('static', filename='img/telecom.jpg') }}');"><h3>Redes y telecomunicaciones</h3></div>
+            <div style="background-image: url('{{ url_for('static', filename='img/cyberseguridad.jpg') }}');"><h3>Ciberseguridad</h3></div>
+            <div style="background-image: url('{{ url_for('static', filename='img/desarrollo-y-diseno-web.jpg') }}');"><h3>Programación Web y aplicaciones</h3></div>
         </div>
         <div class="servicios-generales2">
-            <div style="background-image: url(imagenes/cctv.jpg); background-position: center center;
-            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Videovigilancia</h3></div>
-            <div style="background-image: url(imagenes/crm_inteligencia_artificial.jpg); background-position: center center;
-            background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"><h3>Inteligencia de negocio</h3></div>
+            <div style="background-image: url('{{ url_for('static', filename='img/cctv.jpg') }}');"><h3>Videovigilancia</h3></div>
+            <div style="background-image: url('{{ url_for('static', filename='img/crm_inteligencia_artificial.jpg') }}');"><h3>Inteligencia de negocio</h3></div>
         </div>
         <div class="mas-servicios">
-            <button class="mas-servicios2"><a href="servicios.html">Mas informacion sobres nuestros servicios</a></button>
+            <button class="mas-servicios2"><a href="servicios.html">Más información sobre nuestros servicios</a></button>
         </div>
     </div>
     <section id="Contacto" class="contacto">
         <div class="formulario-container">
-          <h2>Contactanos</h2>
+          <h2>Contáctanos</h2>
           <form action="https://formsubmit.co/ventas@arunapanama.com" method="POST" class="formulario-correo">
             <div class="campo">
               <label for="name">Nombre</label>
@@ -189,7 +183,7 @@
         </div>
       
         <div class="mapa-container">
-          <iframe src="https://www.google.com/maps/embed?pb=..." width="100%" height="300" style="border:0;" allowfullscreen loading="lazy"></iframe>
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3940.233333333333!2d-79.51999999999998!3d9.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zOcKwMDAnMDAuMCJOIDc5wrAzMScwMC4wIlc!5e0!3m2!1sen!2spa!4v1650000000000!5m2!1sen!2spa" width="100%" height="300" style="border:0;" allowfullscreen loading="lazy"></iframe>
         </div>
       </section>
       
