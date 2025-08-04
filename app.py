@@ -229,61 +229,50 @@ def check_session():
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    # Si ya está autenticado, redirigir al dashboard apropiado
-    if 'username' in session:
-        if session['rol'] == 'admin':
-            return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('user_dashboard'))
+@app.route('/login', methods=['POST'])
+def login_submit():
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '')
     
-    error = None
+    conn = get_db_connection()
+    if not conn:
+        flash('Error de conexión a la base de datos', 'danger')
+        return render_template('login.html')
     
-    # Manejo de POST (envío de formulario)
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
+    try:
+        cur = conn.cursor()
+        # VERIFICACIÓN DE USUARIO Y ROL
+        cur.execute("""
+            SELECT id, username, password, rol, empresa_id 
+            FROM users 
+            WHERE LOWER(username) = LOWER(%s) AND rol = 'admin'
+        """, (username,))
+        user = cur.fetchone()
         
-        if not username or not password:
-            error = "Usuario y contraseña son requeridos"
-        else:
-            conn = get_db_connection()
-            if not conn:
-                error = 'Error de conexión a la base de datos'
+        if user:
+            # VERIFICACIÓN DE CONTRASEÑA
+            if check_password_hash(user[2], password):
+                session['user_id'] = user[0]
+                session['username'] = user[1]
+                session['rol'] = user[3].lower()
+                session['empresa_id'] = user[4]
+                
+                # Redirigir a admin.html si es admin
+                if session['rol'] == 'admin':
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    return redirect(url_for('user_dashboard'))
             else:
-                try:
-                    cur = conn.cursor()
-                    cur.execute("""
-                        SELECT id, username, password, rol, empresa_id 
-                        FROM users 
-                        WHERE LOWER(username) = LOWER(%s)
-                    """, (username,))
-                    user = cur.fetchone()
-                    
-                    if user and check_password_hash(user[2], password):
-                        # Configurar sesión
-                        session['user_id'] = user[0]
-                        session['username'] = user[1]
-                        session['rol'] = user[3].lower()
-                        session['empresa_id'] = user[4]
-                        
-                        logger.info(f"Login exitoso: {user[1]}")
-                        
-                        # Redirigir según rol
-                        if session['rol'] == 'admin':
-                            return redirect(url_for('admin_dashboard'))
-                        return redirect(url_for('user_dashboard'))
-                    else:
-                        error = 'Usuario o contraseña incorrectos'
-                except Exception as e:
-                    logger.error(f"Error en login: {str(e)}")
-                    error = 'Error interno del servidor'
-                finally:
-                    if cur:
-                        cur.close()
+                flash('Contraseña incorrecta', 'danger')
+        else:
+            flash('Usuario admin no encontrado o no tiene privilegios', 'danger')
+    except Exception as e:
+        app.logger.error(f"Error en login: {str(e)}")
+        flash('Error interno del servidor', 'danger')
+    finally:
+        cur.close()
     
-    return render_template('login.html', error=error)
-
+    return render_template('login.html')
 @app.route('/register', methods=['GET'])
 def register_page():
     if 'username' in session:
@@ -628,3 +617,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
