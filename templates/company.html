@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🏢 Mi Empresa</h1>
+<p><b>Nombre:</b> {{ company.name }}</p>
+<p><b>RUC:</b> {{ company.ruc }}</p>
+<p><b>Teléfono:</b> {{ company.telefono }}</p>
+<p><b>Dirección:</b> {{ company.direccion }}</p>
+
+{% if session.get("role") == "editor" %}
+<a href="/company/edit">✏️ Editar Empresa</a>
+{% endif %}
+{% endblock %}

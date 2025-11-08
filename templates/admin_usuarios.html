@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<h1>Usuarios registrados</h1>
+<table>
+    <tr>
+        <th>Nombre</th><th>Usuario</th><th>Correo</th><th>Empresa</th><th>Verificado</th><th>Acciones</th>
+    </tr>
+    {% for u in usuarios %}
+    <tr>
+        <td>{{ u['nombre'] }} {{ u['apellido'] }}</td>
+        <td>{{ u['username'] }}</td>
+        <td>{{ u['correo'] }}</td>
+        <td>{{ u['empresa'] }}</td>
+        <td>{% if u['verificado'] %}✔️{% else %}❌{% endif %}</td>
+        <td>
+            {% if u['username'] != 'carlos' %}
+                <a href="{{ url_for('eliminar_usuario', id=u['id']) }}">Eliminar</a>
+            {% else %}
+                Admin principal
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

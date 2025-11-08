@@ -1,0 +1,14 @@
+{% extends "auth_base.html" %}
+{% block title %}Verificar cuenta{% endblock %}
+
+{% block content %}
+<h2 class="auth-title">Verificación de cuenta</h2>
+<p class="text-center">
+  Se ha enviado un correo de verificación a tu dirección registrada.<br>
+  Por favor revisa tu bandeja de entrada y sigue el enlace para activar tu cuenta.
+</p>
+
+<div class="text-center mt-4">
+  <a href="{{ url_for('login') }}" class="btn btn-primary">Volver al inicio de sesión</a>
+</div>
+{% endblock %}

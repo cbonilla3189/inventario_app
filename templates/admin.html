@@ -1,0 +1,121 @@
+{% extends "panel_base.html" %}
+{% block title %}Panel de Administración - Inventario App{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-dark">Panel de Administración</h2>
+    <p class="text-muted">Gestiona empresas y usuarios registrados en el sistema</p>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs justify-content-center mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="empresas-tab" data-bs-toggle="tab" data-bs-target="#empresas" type="button" role="tab">
+        🏢 Empresas
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">
+        👤 Usuarios
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="adminTabsContent">
+    <!-- EMPRESAS -->
+    <div class="tab-pane fade show active" id="empresas" role="tabpanel" aria-labelledby="empresas-tab">
+      <div class="card shadow-lg border-0 rounded-4 mb-4">
+        <div class="card-header bg-primary text-white rounded-top-4">
+          <h5 class="mb-0"><i class="bi bi-building"></i> Listado de Empresas</h5>
+        </div>
+        <div class="card-body">
+          {% if empresas %}
+          <div class="table-responsive">
+            <table class="table table-striped align-middle text-center">
+              <thead class="table-primary text-white">
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Fecha de Registro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for empresa in empresas %}
+                <tr>
+                  <td>{{ empresa.id }}</td>
+                  <td>{{ empresa.nombre }}</td>
+                  <td>{{ empresa.correo }}</td>
+                  <td>{{ empresa.fecha_registro.strftime('%Y-%m-%d') if empresa.fecha_registro else '' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center m-3">No hay empresas registradas.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- USUARIOS -->
+    <div class="tab-pane fade" id="usuarios" role="tabpanel" aria-labelledby="usuarios-tab">
+      <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-success text-white rounded-top-4">
+          <h5 class="mb-0"><i class="bi bi-people"></i> Listado de Usuarios</h5>
+        </div>
+        <div class="card-body">
+          {% if usuarios %}
+          <div class="table-responsive">
+            <table class="table table-striped align-middle text-center">
+              <thead class="table-success text-white">
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Verificado</th>
+                  <th>Empresa</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                  <td>{{ usuario.id }}</td>
+                  <td>{{ usuario.nombre }}</td>
+                  <td>{{ usuario.correo }}</td>
+                  <td>
+                    {% if usuario.verificado %}
+                      <span class="badge bg-success">✔</span>
+                    {% else %}
+                      <span class="badge bg-danger">✖</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ usuario.empresa_nombre if usuario.empresa_nombre else "-" }}</td>
+                  <td>
+                    <div class="d-flex justify-content-center gap-2">
+                      <a href="{{ url_for('editar_usuario', id=usuario.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                      {% if not (usuario.nombre|lower == 'admin' and usuarios|selectattr('nombre', 'equalto', 'Admin')|list|length == 1) %}
+                        <a href="{{ url_for('eliminar_usuario', id=usuario.id) }}" class="btn btn-danger btn-sm">Eliminar</a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center m-3">No hay usuarios registrados.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}

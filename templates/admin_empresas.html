@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Empresas{% endblock %}
+{% block content %}
+<h1>Empresas registradas</h1>
+<ul>
+    {% for e in empresas %}
+        <li>{{ e['empresa'] }}</li>
+    {% else %}
+        <li>No hay empresas registradas.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

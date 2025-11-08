@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📋 Inventario</h1>
+{% if session.get("role") == "editor" %}
+<a href="/inventory/add">➕ Agregar Producto</a>
+{% endif %}
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>SKU</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Cantidad</th>
+        <th>Precio</th>
+        {% if session.get("role") == "editor" %}
+        <th>Acciones</th>
+        {% endif %}
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.sku }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.category_name or "-" }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.price }}</td>
+        {% if session.get("role") == "editor" %}
+        <td>
+            <form action="/inventory/delete/{{ item.id }}" method="POST" style="display:inline">
+                <button type="submit">🗑 Eliminar</button>
+            </form>
+        </td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

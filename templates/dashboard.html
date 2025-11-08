@@ -1,0 +1,105 @@
+{% extends "panel_base.html" %}
+{% block title %}Dashboard - Inventario App{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold text-dark">Bienvenido, {{ usuario }}</h2>
+    <p class="text-muted">Resumen general de tu empresa e inventario</p>
+  </div>
+
+  <!-- Tarjetas principales -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-primary text-white text-center py-4">
+        <h5 class="mb-2"><i class="bi bi-box-seam"></i></h5>
+        <h4>{{ total_productos if total_productos else 0 }}</h4>
+        <p class="mb-0">Productos</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-success text-white text-center py-4">
+        <h5 class="mb-2"><i class="bi bi-building"></i></h5>
+        <h4>{{ total_categorias if total_categorias else 0 }}</h4>
+        <p class="mb-0">Categorías</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-warning text-dark text-center py-4">
+        <h5 class="mb-2"><i class="bi bi-graph-up-arrow"></i></h5>
+        <h4>{{ ventas_mes if ventas_mes else 0 }}</h4>
+        <p class="mb-0">Ventas del mes</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-info text-white text-center py-4">
+        <h5 class="mb-2"><i class="bi bi-people"></i></h5>
+        <h4>{{ clientes if clientes else 0 }}</h4>
+        <p class="mb-0">Clientes</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de acciones rápidas -->
+  <div class="card shadow-lg border-0 rounded-4 mb-5">
+    <div class="card-header bg-gradient text-white rounded-top-4" style="background: linear-gradient(90deg, #4e73df, #1cc88a);">
+      <h5 class="mb-0"><i class="bi bi-lightning-charge"></i> Accesos rápidos</h5>
+    </div>
+    <div class="card-body text-center">
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a href="{{ url_for('inventario') }}" class="btn btn-primary btn-lg rounded-4 shadow-sm px-4">
+          <i class="bi bi-box"></i> Inventario
+        </a>
+        <a href="{{ url_for('mi_empresa') }}" class="btn btn-success btn-lg rounded-4 shadow-sm px-4">
+          <i class="bi bi-building"></i> Mi Empresa
+        </a>
+        <a href="{{ url_for('ventas') }}" class="btn btn-warning btn-lg rounded-4 shadow-sm px-4 text-dark">
+          <i class="bi bi-cash-coin"></i> Ventas
+        </a>
+        <a href="{{ url_for('reportes') }}" class="btn btn-info btn-lg rounded-4 shadow-sm px-4 text-white">
+          <i class="bi bi-bar-chart"></i> Reportes
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Últimos movimientos -->
+  <div class="card shadow-lg border-0 rounded-4">
+    <div class="card-header bg-dark text-white rounded-top-4">
+      <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos movimientos</h5>
+    </div>
+    <div class="card-body">
+      {% if movimientos %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle text-center">
+          <thead class="table-dark">
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mov in movimientos %}
+            <tr>
+              <td>{{ mov.fecha.strftime('%Y-%m-%d %H:%M') if mov.fecha else '' }}</td>
+              <td>{{ mov.tipo }}</td>
+              <td>{{ mov.producto }}</td>
+              <td>{{ mov.cantidad }}</td>
+              <td>{{ mov.usuario }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted text-center m-3">No hay movimientos recientes.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}

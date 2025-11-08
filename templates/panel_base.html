@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Inventario App{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #4e73df, #1cc88a);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* === HEADER === */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      margin-top: 70px;
+      width: 240px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      height: calc(100vh - 70px);
+      padding: 1.5rem 1rem;
+      box-sizing: border-box;
+      color: #fff;
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar .user {
+      font-weight: bold;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      margin: 10px 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* === CONTENIDO PRINCIPAL === */
+    .content {
+      margin-left: 260px;
+      margin-top: 90px;
+      padding: 2rem;
+      flex: 1;
+      background: #fff;
+      border-radius: 15px 0 0 15px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+
+    .content h2 {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    /* === TABLAS === */
+    .table thead {
+      background-color: #4e73df;
+      color: white;
+    }
+
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    /* === BOTONES === */
+    .btn-primary {
+      background-color: #4e73df;
+      border: none;
+    }
+
+    .btn-warning {
+      background-color: #f6c23e;
+      border: none;
+    }
+
+    .btn-danger {
+      background-color: #e74a3b;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Inventario App</h1>
+  </header>
+
+  <div class="sidebar">
+    <div>
+      <p class="user">👤 {{ usuario if usuario else "Invitado" }}</p>
+      {% if session.get("user_id") %}
+        {% if usuario == "carlos" %}
+          <!-- Opciones solo admin -->
+          <a href="{{ url_for('admin_panel') }}" class="{% if request.path == '/admin' %}active{% endif %}">Panel Admin</a>
+          <a href="{{ url_for('admin_panel') }}" class="{% if request.path == '/empresas' %}active{% endif %}">Empresas</a>
+          <a href="{{ url_for('admin_panel') }}" class="{% if request.path == '/usuarios' %}active{% endif %}">Usuarios</a>
+        {% else %}
+          <!-- Opciones usuario normal -->
+          <a href="{{ url_for('dashboard') }}" class="{% if request.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+          <a href="{{ url_for('mi_empresa') }}" class="{% if request.path == '/mi_empresa' %}active{% endif %}">Mi Empresa</a>
+          <a href="{{ url_for('inventario') }}" class="{% if request.path == '/inventario' %}active{% endif %}">Inventario</a>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% if session.get("user_id") %}
+      <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('register') }}">Registro</a>
+    {% endif %}
+  </div>
+
+  <div class="content">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
