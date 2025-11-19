@@ -110,4 +110,31 @@ input.form-control:focus {
 <script>
 document.getElementById("registerForm").addEventListener("submit", function(e) {
   const password = document.getElementById("password").value;
-  const confirm = document.getElementById("confirm_password").val_
+  const confirm = document.getElementById("confirm_password").value;
+  const errorMsg = document.getElementById("error-msg");
+
+  if (password !== confirm) {
+    e.preventDefault();
+    errorMsg.innerHTML = "❌ Las contraseñas no coinciden";
+    return;
+  }
+
+  const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=]).{8,}$/;
+  if (!pattern.test(password)) {
+    e.preventDefault();
+    errorMsg.innerHTML = `
+      ❌ La contraseña debe cumplir con los siguientes requisitos:
+      <ul class="mt-2 mb-0">
+        <li>Mínimo 8 caracteres</li>
+        <li>Al menos una letra mayúscula</li>
+        <li>Al menos una letra minúscula</li>
+        <li>Al menos un número</li>
+        <li>Al menos un carácter especial (!@#$%^&*()_-+=)</li>
+      </ul>`;
+    return;
+  }
+
+  errorMsg.innerHTML = "";
+});
+</script>
+{% endblock %}
