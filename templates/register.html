@@ -4,65 +4,66 @@
 {% block content %}
 <div class="register-container">
   <div class="card register-card shadow-lg p-4 rounded-4">
-    <h2 class="text-center mb-4 fw-bold text-primary">Crear cuenta</h2>
+    <h2 class="text-center mb-3 register-title">Crear cuenta</h2>
 
     <form id="registerForm" method="POST" action="/register" novalidate>
-      <div class="row">
+      <div class="row g-2">
         <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Nombre</label>
-          <input type="text" class="form-control form-control-lg" name="nombre" placeholder="Ej. Carlos" required>
+          <label for="nombre" class="form-label fw-semibold">Nombre</label>
+          <input id="nombre" type="text" class="form-control form-control-lg" name="nombre" placeholder="Ej. Carlos" required>
         </div>
         <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Apellido</label>
-          <input type="text" class="form-control form-control-lg" name="apellido" placeholder="Ej. Bonilla" required>
+          <label for="apellido" class="form-label fw-semibold">Apellido</label>
+          <input id="apellido" type="text" class="form-control form-control-lg" name="apellido" placeholder="Ej. Bonilla" required>
         </div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Empresa</label>
-        <input type="text" class="form-control form-control-lg" name="empresa" placeholder="Nombre de la empresa">
+        <label for="empresa" class="form-label fw-semibold">Empresa</label>
+        <input id="empresa" type="text" class="form-control form-control-lg" name="empresa" placeholder="Nombre de la empresa">
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Correo electrónico</label>
-        <input type="email" class="form-control form-control-lg" name="correo" placeholder="correo@empresa.com" required>
+        <label for="correo" class="form-label fw-semibold">Correo electrónico</label>
+        <input id="correo" type="email" class="form-control form-control-lg" name="correo" placeholder="correo@empresa.com" required>
       </div>
 
-      <div class="row">
+      <div class="row g-2">
         <div class="col-md-8 mb-3">
-          <label class="form-label fw-semibold">RUC</label>
-          <input type="text" class="form-control form-control-lg" name="ruc" placeholder="Ej. 1234567-8-999999">
+          <label for="ruc" class="form-label fw-semibold">RUC</label>
+          <input id="ruc" type="text" class="form-control form-control-lg" name="ruc" placeholder="Ej. 1234567-8-999999">
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label fw-semibold">DV</label>
-          <input type="text" class="form-control form-control-lg" name="dv" placeholder="Ej. 55">
+          <label for="dv" class="form-label fw-semibold">DV</label>
+          <input id="dv" type="text" class="form-control form-control-lg" name="dv" placeholder="Ej. 55">
         </div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Teléfono</label>
-        <input type="text" class="form-control form-control-lg" name="telefono" placeholder="Ej. +507 6000-0000">
+        <label for="telefono" class="form-label fw-semibold">Teléfono</label>
+        <input id="telefono" type="text" class="form-control form-control-lg" name="telefono" placeholder="Ej. +507 6000-0000">
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Usuario</label>
-        <input type="text" class="form-control form-control-lg" name="username" placeholder="Nombre de usuario" required>
+        <label for="username" class="form-label fw-semibold">Usuario</label>
+        <input id="username" type="text" class="form-control form-control-lg" name="username" placeholder="Nombre de usuario" required>
       </div>
 
-      <div class="row">
+      <div class="row g-2">
         <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Contraseña</label>
-          <input type="password" class="form-control form-control-lg" name="password" id="password" placeholder="********" required>
+          <label for="password" class="form-label fw-semibold">Contraseña</label>
+          <input id="password" type="password" class="form-control form-control-lg" name="password" placeholder="********" required aria-describedby="passwordHelp">
         </div>
         <div class="col-md-6 mb-3">
-          <label class="form-label fw-semibold">Confirmar contraseña</label>
-          <input type="password" class="form-control form-control-lg" name="confirm_password" id="confirm_password" placeholder="********" required>
+          <label for="confirm_password" class="form-label fw-semibold">Confirmar contraseña</label>
+          <input id="confirm_password" type="password" class="form-control form-control-lg" name="confirm_password" placeholder="********" required>
         </div>
       </div>
 
-      <div id="error-msg" class="text-danger small mb-3"></div>
+      <div id="error-msg" class="error-box small mb-3" role="alert" aria-live="polite"></div>
 
-      <div class="d-grid">
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">← Volver al inicio</a>
         <button type="submit" class="btn btn-primary btn-lg rounded-pill">Registrarme</button>
       </div>
 
@@ -74,67 +75,134 @@
 </div>
 
 <style>
+/* Layout general */
 .register-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 90vh;
+  min-height: 85vh;
+  padding: 2rem;
+  background: linear-gradient(135deg,#0ea5a4 0%,#3b82f6 100%);
 }
 
+/* Card */
 .register-card {
   width: 100%;
-  max-width: 600px;
-  background: #ffffffdd;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 520px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.18);
+  padding: 1.75rem;
+  border: 1px solid rgba(0,0,0,0.04);
 }
 
-.auth-title {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  font-weight: 700;
+/* Título */
+.register-title {
+  margin-bottom: 0.75rem;
+  font-size: 1.4rem;
+  color: #0b5ed7;
 }
 
+/* Labels e inputs */
+.form-label { font-weight: 600; color: #1f2937; font-size: 0.95rem; }
 input.form-control {
   border-radius: 10px;
-  border: 1px solid #d0d0d0;
-  transition: all 0.2s ease;
+  border: 1px solid #e6e9ee;
+  padding: 0.7rem 0.9rem;
+  transition: all 0.18s ease;
+  background: #fff;
+}
+input.form-control:focus {
+  border-color: #0b5ed7;
+  box-shadow: 0 6px 18px rgba(11,94,215,0.08);
+  outline: none;
 }
 
-input.form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0,123,255,0.3);
+/* Botones */
+.btn-primary {
+  background: linear-gradient(180deg,#0b5ed7,#084bb5);
+  border: none;
+  box-shadow: 0 6px 18px rgba(11,94,215,0.12);
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  border-radius: 999px;
+}
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(11,94,215,0.12);
+  color: #0b5ed7;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Mensaje de error */
+.error-box {
+  color: #b91c1c;
+  background: rgba(185,28,28,0.04);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .register-card { padding: 1.1rem; }
+  .register-title { font-size: 1.15rem; }
 }
 </style>
 
 <script>
-document.getElementById("registerForm").addEventListener("submit", function(e) {
-  const password = document.getElementById("password").value;
-  const confirm = document.getElementById("confirm_password").value;
-  const errorMsg = document.getElementById("error-msg");
+(function() {
+  const form = document.getElementById('registerForm');
+  const passwordEl = document.getElementById('password');
+  const confirmEl = document.getElementById('confirm_password');
+  const errorMsg = document.getElementById('error-msg');
 
-  if (password !== confirm) {
-    e.preventDefault();
-    errorMsg.innerHTML = "❌ Las contraseñas no coinciden";
-    return;
+  function showError(html) {
+    errorMsg.innerHTML = html;
+    errorMsg.scrollIntoView({behavior: 'smooth', block: 'center'});
   }
 
-  const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=]).{8,}$/;
-  if (!pattern.test(password)) {
-    e.preventDefault();
-    errorMsg.innerHTML = `
-      ❌ La contraseña debe cumplir con los siguientes requisitos:
-      <ul class="mt-2 mb-0">
-        <li>Mínimo 8 caracteres</li>
-        <li>Al menos una letra mayúscula</li>
-        <li>Al menos una letra minúscula</li>
-        <li>Al menos un número</li>
-        <li>Al menos un carácter especial (!@#$%^&*()_-+=)</li>
-      </ul>`;
-    return;
+  function clearError() {
+    errorMsg.innerHTML = '';
   }
 
-  errorMsg.innerHTML = "";
-});
+  form.addEventListener('submit', function(e) {
+    const password = passwordEl.value || '';
+    const confirm = confirmEl.value || '';
+
+    if (password !== confirm) {
+      e.preventDefault();
+      showError('❌ Las contraseñas no coinciden');
+      return;
+    }
+
+    const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=]).{8,}$/;
+    if (!pattern.test(password)) {
+      e.preventDefault();
+      showError(
+        '❌ La contraseña debe cumplir con los siguientes requisitos:' +
+        '<ul class="mt-2 mb-0">' +
+        '<li>Mínimo 8 caracteres</li>' +
+        '<li>Al menos una letra mayúscula</li>' +
+        '<li>Al menos una letra minúscula</li>' +
+        '<li>Al menos un número</li>' +
+        '<li>Al menos un carácter especial (!@#$%^&*()_-+=)</li>' +
+        '</ul>'
+      );
+      return;
+    }
+
+    clearError();
+  });
+
+  // Limpiar mensaje de error al editar campos relevantes
+  ['input','change'].forEach(evt => {
+    [passwordEl, confirmEl, document.getElementById('username'), document.getElementById('correo')].forEach(el=>{
+      if (el) el.addEventListener(evt, clearError);
+    });
+  });
+})();
 </script>
 {% endblock %}
